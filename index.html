@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My YouTube Clone</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Roboto', Arial, sans-serif; }
+        body { background-color: #0f0f0f; color: white; overflow-x: hidden; }
+        
+        /* Navbar */
+        .navbar { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background-color: #0f0f0f; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #333; }
+        .logo { font-size: 22px; font-weight: bold; color: white; display: flex; align-items: center; gap: 5px; cursor: pointer; }
+        .logo span { color: #ff0000; }
+        
+        .search-box { display: flex; width: 50%; max-width: 600px; }
+        .search-box input { width: 100%; padding: 10px 15px; background: #121212; border: 1px solid #303030; border-radius: 20px 0 0 20px; color: white; outline: none; font-size: 16px; }
+        .search-box button { padding: 10px 20px; background: #222; border: 1px solid #303030; border-left: none; border-radius: 0 20px 20px 0; color: white; cursor: pointer; }
+        .search-box button:hover { background: #333; }
+
+        .profile-menu { position: relative; }
+        .profile-icon { width: 35px; height: 35px; border-radius: 50%; background-color: #ff0000; color: white; display: flex; justify-content: center; align-items: center; font-weight: bold; cursor: pointer; font-size: 18px; }
+        .settings-dropdown { display: none; position: absolute; right: 0; top: 45px; background: #282828; width: 200px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.5); overflow: hidden; }
+        .settings-dropdown.active { display: block; }
+        .settings-dropdown div { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #3a3a3a; }
+        .settings-dropdown div:hover { background: #3f3f3f; }
+
+        /* Layout */
+        .main-layout { display: flex; height: calc(100vh - 60px); }
+        
+        /* Sidebar */
+        .sidebar { width: 80px; background-color: #0f0f0f; display: flex; flex-direction: column; align-items: center; padding-top: 10px; gap: 20px; border-right: 1px solid #222; flex-shrink: 0; }
+        .sidebar-item { display: flex; flex-direction: column; align-items: center; color: white; font-size: 11px; cursor: pointer; gap: 5px; opacity: 0.8; width: 100%; padding: 10px 0; }
+        .sidebar-item:hover { opacity: 1; background-color: #222; border-radius: 10px; }
+        .sidebar-item i { font-size: 20px; }
+        .icon-box { width: 24px; height: 24px; background: #fff; border-radius: 4px; display: flex; justify-content: center; align-items: center; color: black; font-weight: bold; font-size: 14px;}
+
+        /* Content Area */
+        .content { flex: 1; padding: 20px; overflow-y: auto; background-color: #0f0f0f; }
+        
+        /* Player View */
+        .player-view { display: none; width: 100%; max-width: 900px; margin: 0 auto; margin-bottom: 20px; }
+        .video-container { position: relative; padding-bottom: 56.25%; height: 0; background: black; border-radius: 12px; overflow: hidden; }
+        .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+        .video-title { font-size: 20px; font-weight: bold; margin-top: 15px; }
+
+        /* Grid */
+        .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .video-card { cursor: pointer; display: flex; flex-direction: column; gap: 10px; }
+        .video-card img { width: 100%; border-radius: 12px; object-fit: cover; aspect-ratio: 16/9; transition: 0.2s; }
+        .video-card:hover img { border-radius: 0; transform: scale(1.02); }
+        .video-info h3 { font-size: 15px; line-height: 1.3; margin-bottom: 5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .video-info p { color: #aaa; font-size: 13px; }
+        
+        h2.section-title { margin-bottom: 20px; font-size: 22px; }
+        .loading-text { text-align: center; padding: 20px; color: #aaa; font-size: 14px; display: none; }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .sidebar { flex-direction: row; width: 100%; height: 60px; position: fixed; bottom: 0; border-top: 1px solid #333; z-index: 100; justify-content: space-around; padding: 0; background: #0f0f0f; border-right: none; }
+            .sidebar-item { padding: 0; height: 100%; justify-content: center; }
+            .sidebar-item:hover { background-color: transparent; }
+            .content { padding-bottom: 80px; }
+            .search-box { width: 70%; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="logo" onclick="loadHome()"><span>▶</span> YouTube</div>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search or paste a link...">
+            <button onclick="handleSearch()">🔍</button>
+        </div>
+        <div class="profile-menu">
+            <div class="profile-icon" onclick="toggleSettings()">S</div>
+            <div class="settings-dropdown" id="settingsMenu">
+                <div>Sakir Molla</div>
+                <div>🌙 Dark Mode (On)</div>
+                <div>⚙️ Settings</div>
+                <div>❓ Help & Feedback</div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-layout">
+        <div class="sidebar">
+            <div class="sidebar-item" onclick="loadHome()">
+                <div class="icon-box">🏠</div><span>Home</span>
+            </div>
+            <div class="sidebar-item" onclick="loadShorts()">
+                <div class="icon-box">⚡</div><span>Shorts</span>
+            </div>
+            <div class="sidebar-item" onclick="loadHistory()">
+                <div class="icon-box">🕒</div><span>History</span>
+            </div>
+        </div>
+
+        <div class="content" id="scrollContent">
+            <div class="player-view" id="playerView">
+                <div class="video-container">
+                    <iframe id="mainPlayer" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+                </div>
+                <div class="video-title" id="mainTitle">Video Title</div>
+            </div>
+
+            <h2 class="section-title" id="sectionTitle">Most Popular</h2>
+            <div class="video-grid" id="videoGrid">
+                </div>
+            <div class="loading-text" id="loadingText">Loading more videos...</div>
+        </div>
+    </div>
+
+    <script>
+        const API_KEY = 'AIzaSyCFOKOWRTHy-0invKiBs93Chj3fAm5u8tQ';
+        const videoGrid = document.getElementById('videoGrid');
+        const sectionTitle = document.getElementById('sectionTitle');
+        const playerView = document.getElementById('playerView');
+        const scrollContent = document.getElementById('scrollContent');
+        const loadingText = document.getElementById('loadingText');
+
+        // Variables for Infinite Scroll
+        let nextPageToken = '';
+        let isFetching = false;
+        let currentApiUrl = '';
+        let isCurrentHome = true;
+
+        // Toggle Settings
+        function toggleSettings() {
+            document.getElementById('settingsMenu').classList.toggle('active');
+        }
+
+        // On Load
+        window.onload = loadHome;
+
+        // Load Home (Popular Videos)
+        function loadHome() {
+            playerView.style.display = 'none';
+            sectionTitle.innerText = "Most Popular 🔥";
+            videoGrid.innerHTML = "";
+            nextPageToken = '';
+            
+            isCurrentHome = true;
+            currentApiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&chart=mostPopular&regionCode=IN&maxResults=20&key=${API_KEY}`;
+            fetchVideos(currentApiUrl, true);
+        }
+
+        // Load Shorts (Search for #shorts)
+        function loadShorts() {
+            playerView.style.display = 'none';
+            sectionTitle.innerText = "Trending Shorts ⚡";
+            videoGrid.innerHTML = "";
+            nextPageToken = '';
+            
+            isCurrentHome = false;
+            currentApiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=20&q=%23shorts&type=video&key=${API_KEY}`;
+            fetchVideos(currentApiUrl, false);
+        }
+
+        // Handle Search or Link Paste
+        function handleSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            if(!query) return alert("Please enter a search term or paste a link!");
+
+            // Check if it's a YouTube link
+            const linkRegex = /(?:youtu\.be\/|youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+            const match = query.match(linkRegex);
+
+            if (match && match[1]) {
+                const videoId = match[1];
+                playVideo(videoId, "Playing from Link", "");
+            } else {
+                playerView.style.display = 'none';
+                sectionTitle.innerText = `Search Results for: "${query}"`;
+                videoGrid.innerHTML = "";
+                nextPageToken = '';
+                
+                isCurrentHome = false;
+                currentApiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=20&q=${query}&type=video&key=${API_KEY}`;
+                fetchVideos(currentApiUrl, false);
+            }
+        }
+
+        // Fetch and Display Videos
+        async function fetchVideos(url, isHome) {
+            if(isFetching) return;
+            isFetching = true;
+            loadingText.style.display = 'block';
+            
+            try {
+                // Add page token if available (for infinite scroll)
+                const fetchUrl = nextPageToken ? `${url}&pageToken=${nextPageToken}` : url;
+                
+                const response = await fetch(fetchUrl);
+                const data = await response.json();
+                
+                // Save the token for the next scroll
+                nextPageToken = data.nextPageToken || '';
+                
+                let html = '';
+                if(data.items) {
+                    data.items.forEach(item => {
+                        const videoId = isHome ? item.id : item.id.videoId;
+                        if(!videoId) return; 
+                        
+                        const title = item.snippet.title;
+                        const channel = item.snippet.channelTitle;
+                        const thumbnail = item.snippet.thumbnails.medium ? item.snippet.thumbnails.medium.url : item.snippet.thumbnails.default.url;
+                        const safeTitle = title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
+                        html += `
+                            <div class="video-card" onclick="playVideo('${videoId}', '${safeTitle}', '${thumbnail}')">
+                                <img src="${thumbnail}" alt="Thumbnail">
+                                <div class="video-info">
+                                    <h3>${title}</h3>
+                                    <p>${channel}</p>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                
+                // Append new videos to the bottom
+                videoGrid.innerHTML += html;
+                
+                // If no more videos
+                if(!nextPageToken) {
+                    loadingText.innerText = "No more videos to show.";
+                } else {
+                    loadingText.style.display = 'none';
+                }
+
+            } catch (error) {
+                loadingText.innerText = "Error loading videos.";
+            }
+            
+            isFetching = false;
+        }
+
+        // Infinite Scroll Logic
+        scrollContent.addEventListener('scroll', () => {
+            // Check if user scrolled to the bottom of the page
+            if (scrollContent.scrollTop + scrollContent.clientHeight >= scrollContent.scrollHeight - 100) {
+                // If there's a next page and it's not currently fetching, fetch more!
+                if(nextPageToken && !isFetching && currentApiUrl) {
+                    fetchVideos(currentApiUrl, isCurrentHome);
+                }
+            }
+        });
+
+        // Play Video & Save to History
+        function playVideo(id, title, thumbnail) {
+            playerView.style.display = 'block';
+            document.getElementById('mainPlayer').src = `https://www.youtube.com/embed/${id}?autoplay=1`;
+            document.getElementById('mainTitle').innerText = title;
+            
+            // Scroll to top to see the player
+            scrollContent.scrollTo({ top: 0, behavior: 'smooth' });
+
+            // Save to History
+            if (thumbnail && id) {
+                let history = JSON.parse(localStorage.getItem('ytHistory')) || [];
+                history = history.filter(v => v.id !== id);
+                history.unshift({ id, title, thumbnail });
+                if(history.length > 50) history.pop(); // Save up to 50 videos in history
+                localStorage.setItem('ytHistory', JSON.stringify(history));
+            }
+        }
+
+        // Load History
+        function loadHistory() {
+            playerView.style.display = 'none';
+            sectionTitle.innerText = "Watch History 🕒";
+            nextPageToken = ''; // Stop infinite scroll on history page
+            currentApiUrl = ''; 
+            loadingText.style.display = 'none';
+            
+            let history = JSON.parse(localStorage.getItem('ytHistory')) || [];
+            
+            if(history.length === 0) {
+                videoGrid.innerHTML = "<p style='grid-column: 1/-1; text-align:center; padding: 20px;'>You haven't watched any videos yet!</p>";
+                return;
+            }
+
+            let html = '';
+            history.forEach(v => {
+                const safeTitle = v.title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                html += `
+                    <div class="video-card" onclick="playVideo('${v.id}', '${safeTitle}', '${v.thumbnail}')">
+                        <img src="${v.thumbnail}" alt="Thumbnail">
+                        <div class="video-info">
+                            <h3>${v.title}</h3>
+                            <p>History</p>
+                        </div>
+                    </div>
+                `;
+            });
+            videoGrid.innerHTML = html;
+        }
+    </script>
+
+</body>
+</html>
